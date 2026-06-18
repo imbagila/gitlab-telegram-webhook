@@ -1,12 +1,12 @@
 {
   "name": "gitlab-telegram-webhook",
   "module": "index.ts",
-  "type": "module",
-  "private": true,
+  "dependencies": {
+    "@typescript/native-preview": "^7.0.0-dev.20260618.1"
+  },
   "devDependencies": {
     "@types/bun": "latest"
   },
-  "peerDependencies": {
-    "typescript": "^5"
-  }
+  "private": true,
+  "type": "module"
 }
