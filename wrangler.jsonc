@@ -1,0 +1,10 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "gitlab-telegram-webhook",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-06-18",
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  }
+}
