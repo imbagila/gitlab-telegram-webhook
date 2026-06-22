@@ -1,3 +1,4 @@
 # Copy to .dev.vars for local development with `wrangler dev`
 # TELEGRAM_BOT_TOKEN=
 # TELEGRAM_CHAT_ID=
+# GITLAB_TOKEN=
