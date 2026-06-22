@@ -7,14 +7,16 @@ export async function createMergeRequestNote(
   mergeRequestIid: number,
   body: string,
 ): Promise<GitlabNote> {
-  const url = `${env.GITLAB_BASE_URL}/api/v4/projects/${projectId}/merge_requests/${mergeRequestIid}/notes?body=${body}`;
+  const url = `${env.GITLAB_BASE_URL}/api/v4/projects/${projectId}/merge_requests/${mergeRequestIid}/notes`;
 
   const response = await fetch(url, {
     method: "POST",
     headers: {
       "PRIVATE-TOKEN": env.GITLAB_TOKEN,
       Accept: "application/json",
+      "Content-Type": "application/x-www-form-urlencoded",
     },
+    body: new URLSearchParams({ body }).toString(),
   });
 
   if (!response.ok) {
