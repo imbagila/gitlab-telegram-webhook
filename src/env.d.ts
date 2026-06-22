@@ -5,4 +5,5 @@ declare interface Env {
   GITLAB_BASE_URL: string;
   OPENROUTER_API_KEY: string;
   MODEL: string;
+  MERGE_REQUEST_REVIEW_QUEUE: Queue<{ projectId: number; mrIid: number }>;
 }

@@ -1,9 +1,10 @@
 import { flattenError } from "zod";
-import { gitlabWebhookSchema } from "./gitlab/webhook/schema.ts";
 import { processMergeRequestReview } from "./gitlab/merge_request_review.ts";
+import type { MergeRequestReviewMessage } from "./gitlab/merge_request_review.queue.ts";
+import { gitlabWebhookSchema } from "./gitlab/webhook/schema.ts";
 
 export default {
-  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+  async fetch(request: Request, env: Env, _ctx: ExecutionContext): Promise<Response> {
     let url: URL;
     try {
       url = new URL(request.url);
@@ -42,12 +43,31 @@ export default {
       return Response.json({ status: "ok", skipped: true });
     }
 
-    ctx.waitUntil(
-      processMergeRequestReview(env, project.id, object_attributes.iid).catch((error) => {
-        console.error("Merge request review failed:", error);
-      }),
-    );
+    const message: MergeRequestReviewMessage = {
+      projectId: project.id,
+      mrIid: object_attributes.iid,
+    };
+
+    try {
+      await env.MERGE_REQUEST_REVIEW_QUEUE.send(message);
+    } catch (error) {
+      console.error("Failed to enqueue merge request review:", error);
+      return Response.json({ error: "failed to enqueue review" }, { status: 500 });
+    }
 
     return Response.json({ status: "accepted" });
   },
-} satisfies ExportedHandler<Env>;
+
+  async queue(batch: MessageBatch<MergeRequestReviewMessage>, env: Env): Promise<void> {
+    for (const message of batch.messages) {
+      const { projectId, mrIid } = message.body;
+
+      try {
+        await processMergeRequestReview(env, projectId, mrIid);
+      } catch (error) {
+        console.error("Merge request review failed:", error);
+        message.retry();
+      }
+    }
+  },
+} satisfies ExportedHandler<Env, MergeRequestReviewMessage>;
