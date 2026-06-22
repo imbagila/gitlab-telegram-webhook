@@ -1,6 +1,7 @@
 import { flattenError } from "zod";
 import { gitlabWebhookSchema } from "./gitlab/webhook/schema.ts";
 import { sendMessage } from "./telegram/send_message.api.ts";
+import { OpenRouter } from '@openrouter/sdk';
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -27,18 +28,34 @@ export default {
         return Response.json({ message: "invalid json", error: e }, { status: 400 });
       }
 
+      // parse request body to schema
       const parsed = gitlabWebhookSchema.safeParse(body);
       if (!parsed.success) {
         return Response.json({ error: flattenError(parsed.error) }, { status: 400 });
       }
 
-      const webhook = parsed.data;
+      // initialize openrouter client
+      const client = new OpenRouter({
+        apiKey: env.OPENROUTER_API_KEY
+      });
 
+      // send message to openrouter
+      const response = await client.chat.send({
+        chatRequest: {
+          model: env.MODEL,
+          messages: [
+            { role: "user", content: "Hello!" }
+          ]
+        }
+      });
+
+      // check if webhook is valid
+      const webhook = parsed.data;
       if (webhook.object_kind === "issue") {
-        await sendMessage(env, webhook.object_attributes.title);
+        await sendMessage(env, "issue: " + response.choices[0].message.content);
         return Response.json({ status: "ok" });
       } else if (webhook.object_kind === "merge_request") {
-        await sendMessage(env, webhook.object_attributes.title);
+        await sendMessage(env, "merge request: " + response.choices[0].message.content);
         return Response.json({ status: "ok" });
       } else {
         return Response.json({ error: "unsupported object_kind" }, { status: 422 });

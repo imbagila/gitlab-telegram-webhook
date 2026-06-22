@@ -10,6 +10,7 @@
     "types": "wrangler types"
   },
   "dependencies": {
+    "@openrouter/sdk": "^0.13.7",
     "zod": "^4.1.12"
   },
   "devDependencies": {
