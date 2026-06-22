@@ -2,7 +2,7 @@ import { flattenError } from "zod";
 import { gitlabMergeRequestSchema, type GitlabMergeRequest } from "./merge_request.schema";
 
 export async function getMergeRequest(env: Env, projectId: number, mergeRequestId: number): Promise<GitlabMergeRequest> {
-    const url = `https://gitlab.spesolution.net/api/v4/projects/${projectId}/merge_requests/${mergeRequestId}`;
+    const url = `${env.GITLAB_BASE_URL}/api/v4/projects/${projectId}/merge_requests/${mergeRequestId}`;
   
     // get merge request
     const response = await fetch(url, {
