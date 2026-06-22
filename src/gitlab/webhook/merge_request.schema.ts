@@ -111,7 +111,7 @@ const gitlabMergeRequestObjectAttributesSchema = z.object({
   merge_commit_sha: z.string().nullable(),
   merged_at: z.string().nullable().optional(),
   merge_error: z.string().nullable(),
-  merge_params: z.record(z.string(), z.string()),
+  merge_params: z.record(z.string(), z.union([z.string(), z.boolean()])),
   merge_status: z.string().optional(),
   merge_user_id: z.number().nullable(),
   merge_when_pipeline_succeeds: z.boolean(),
