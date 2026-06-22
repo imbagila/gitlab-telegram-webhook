@@ -2,6 +2,7 @@ import { OpenRouter } from "@openrouter/sdk";
 import { getMergeRequestDiffs } from "./api/diffs.api.ts";
 import { getMergeRequest } from "./api/merge_request.api.ts";
 import { sendMessage } from "../telegram/send_message.api.ts";
+import { escapeHtml, escapeHtmlAttr, markdownToTelegramHtml } from "../telegram/html.ts";
 
 const MAX_DIFF_CHARS = 8000;
 const MAX_TELEGRAM_CHARS = 4000;
@@ -29,7 +30,33 @@ Provide a brief code review with these sections:
 1. Summary - what the changes do
 2. Issues - bugs, security problems, or concerns (skip if none)
 3. Suggestions - code quality improvements (skip if none)
-4. Verdict: LGTM / REQUEST CHANGES / COMMENT`;
+4. Verdict: LGTM / REQUEST CHANGES / COMMENT
+
+Use Markdown formatting: **bold** for section titles, \`code\` for identifiers, and bullet lists where helpful.`;
+}
+
+function buildReviewMessage(
+  title: string,
+  authorName: string,
+  sourceBranch: string,
+  targetBranch: string,
+  webUrl: string,
+  reviewText: string,
+): string {
+  const header =
+    `<b>Code Review:</b> ${escapeHtml(title)}\n` +
+    `<b>Author:</b> ${escapeHtml(authorName)} | ${escapeHtml(sourceBranch)} -&gt; ${escapeHtml(targetBranch)}\n\n`;
+  const footer =
+    `\n\n<b>URL:</b> <a href="${escapeHtmlAttr(webUrl)}">${escapeHtml(webUrl)}</a>`;
+
+  const htmlOverhead = header.length + footer.length + 200;
+  const maxReviewChars = MAX_TELEGRAM_CHARS - htmlOverhead;
+  let review = reviewText;
+  if (review.length > maxReviewChars) {
+    review = review.slice(0, maxReviewChars - 3) + "...";
+  }
+
+  return header + markdownToTelegramHtml(review) + footer;
 }
 
 export async function processMergeRequestReview(
@@ -74,13 +101,14 @@ export async function processMergeRequestReview(
   const reviewText =
     typeof content === "string" && content.length > 0 ? content : "No review generated.";
 
-  const header = `Code Review: ${mr.title}\nAuthor: ${mr.author.name} | ${mr.source_branch} -> ${mr.target_branch}\n\n`;
-  const footer = `\n\nURL: ${mr.web_url}`;
-  let message = header + reviewText + footer;
+  const message = buildReviewMessage(
+    mr.title,
+    mr.author.name,
+    mr.source_branch,
+    mr.target_branch,
+    mr.web_url,
+    reviewText,
+  );
 
-  if (message.length > MAX_TELEGRAM_CHARS) {
-    message = message.slice(0, MAX_TELEGRAM_CHARS - 3) + "...";
-  }
-
-  await sendMessage(env, message);
+  await sendMessage(env, message, "HTML");
 }
